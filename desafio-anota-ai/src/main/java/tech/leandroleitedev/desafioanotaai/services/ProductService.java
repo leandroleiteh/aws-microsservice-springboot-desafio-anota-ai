@@ -30,9 +30,9 @@ public class ProductService {
     public Product insert(ProductDto productDto) {
         var category = this.categoryService.getById(productDto.categoryId()).orElseThrow(CategoryNotFoundException::new);
         var product = new Product(productDto);
-        product.setCategory(category);
+
         this.productRepository.save(product);
-        this.awsSnsService.publish(new MessageDTO(product.getOwnerId()));
+        this.awsSnsService.publish(new MessageDTO(product.toString()));
         return product;
     }
 
@@ -45,14 +45,15 @@ public class ProductService {
         var product = this.productRepository.findById(id).orElseThrow(ProductNotFoundException::new);
 
         if (Objects.nonNull(productDto.categoryId())) {
-            this.categoryService.getById(productDto.categoryId()).ifPresent(product::setCategory);
+            this.categoryService.getById(productDto.categoryId()).orElseThrow(CategoryNotFoundException::new);
+            product.setCategoryId(productDto.categoryId());
         }
 
         if (!productDto.title().isEmpty()) product.setTitle(productDto.title());
         if (!productDto.description().isEmpty()) product.setDescription(productDto.description());
         if (Objects.nonNull(productDto.price())) product.setPrice(productDto.price());
         this.productRepository.save(product);
-        this.awsSnsService.publish(new MessageDTO(product.getOwnerId()));
+        this.awsSnsService.publish(new MessageDTO(product.toString()));
         return product;
     }
 

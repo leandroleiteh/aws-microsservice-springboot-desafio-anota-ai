@@ -6,22 +6,29 @@ import tech.leandroleitedev.desafioanotaai.domain.category.Category;
 import tech.leandroleitedev.desafioanotaai.domain.category.CategoryDto;
 import tech.leandroleitedev.desafioanotaai.domain.category.exceptions.CategoryNotFoundException;
 import tech.leandroleitedev.desafioanotaai.repositories.CategoryRepository;
+import tech.leandroleitedev.desafioanotaai.services.aws.AwsSnsService;
+import tech.leandroleitedev.desafioanotaai.services.aws.MessageDTO;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class CategoryService {
-    private CategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
+    private final AwsSnsService awsSnsService;
 
-    public CategoryService(CategoryRepository categoryRepository) {
+
+    public CategoryService(CategoryRepository categoryRepository, AwsSnsService awsSnsService) {
         this.categoryRepository = categoryRepository;
+        this.awsSnsService = awsSnsService;
     }
 
     @Transactional
     public Category insert(CategoryDto categoryDto){
         var newCategory = new Category(categoryDto);
         this.categoryRepository.save(newCategory);
+        this.awsSnsService.publish(new MessageDTO(newCategory.toString()));
+
         return newCategory;
     }
 
@@ -35,6 +42,7 @@ public class CategoryService {
 
         if (!categoryDto.title().isEmpty()) newCategory.setTitle(categoryDto.title());
         if (!categoryDto.description().isEmpty()) newCategory.setDescription(categoryDto.description());
+        this.awsSnsService.publish(new MessageDTO(newCategory.toString()));
         return this.categoryRepository.save(newCategory);
 
     }
